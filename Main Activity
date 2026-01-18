@@ -112,7 +112,7 @@ class AppThread extends Thread {
         Socket socket = null;
         while (true) {
             try {
-                InetSocketAddress addr = new InetSocketAddress("192.168.29.55", 4443);
+                InetSocketAddress addr = new InetSocketAddress("<IP>", 4443);
 
                  socket = new Socket();
 
@@ -156,6 +156,7 @@ class AppThread extends Thread {
                 }
             }
         }
+
 
 
 
