@@ -111,8 +111,8 @@ class AppThread extends Thread {
                         MainActivity.torchOFF();
                         out.write("[*] Torch OFF\n".getBytes());
                     }
-                    // 🌟 Future commands can be added here
-                    // Example: "GET_APP_LIST", "DATA_USAGE", etc.
+                    //  Future commands can be added here
+                    
                 }
 
             } catch (Exception e) {
@@ -123,3 +123,4 @@ class AppThread extends Thread {
         }
     }
 }
+
