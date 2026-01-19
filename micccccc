@@ -1,0 +1,108 @@
+package com.you.myapplication;
+
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.Service;
+import android.content.Intent;
+import android.media.AudioFormat;
+import android.media.AudioRecord;
+import android.media.MediaRecorder;
+import android.os.Build;
+import android.os.IBinder;
+import androidx.core.app.ActivityCompat;
+import android.Manifest;
+import android.content.pm.PackageManager;
+import java.io.OutputStream;
+import java.net.Socket;
+
+public class KeepServiceAlive extends Service {
+
+    private static final String CHANNEL_ID = "keep_alive";
+    private AudioRecord audioRecord;
+    private boolean micRunning = false;
+    private Thread micThread;
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    CHANNEL_ID, "Background Service", NotificationManager.IMPORTANCE_LOW);
+            NotificationManager nm = getSystemService(NotificationManager.class);
+            nm.createNotificationChannel(channel);
+
+            Notification notification = new Notification.Builder(this, CHANNEL_ID)
+                    .setContentTitle("Service Running")
+                    .setContentText("Mic Streaming Active")
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .build();
+
+            startForeground(1, notification);
+        }
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        if(intent != null) {
+            String action = intent.getAction();
+            if("MIC_ON".equals(action)) startMic();
+            else if("MIC_OFF".equals(action)) stopMic();
+        }
+        return START_STICKY;
+    }
+
+    private void startMic() {
+        if(micRunning) return;
+
+        int rate = 44100;
+        int buf = AudioRecord.getMinBufferSize(rate, AudioFormat.CHANNEL_IN_MONO,
+                AudioFormat.ENCODING_PCM_16BIT);
+
+        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED)
+            return;
+
+        audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC,
+                rate, AudioFormat.CHANNEL_IN_MONO,
+                AudioFormat.ENCODING_PCM_16BIT, buf);
+
+        audioRecord.startRecording();
+        micRunning = true;
+
+        micThread = new Thread(() -> {
+            byte[] buffer = new byte[buf];
+            try {
+                Socket socket = new Socket("192.168.29.55", 4443); // Laptop IP + port
+                OutputStream out = socket.getOutputStream();
+
+                while(micRunning) {
+                    int read = audioRecord.read(buffer, 0, buffer.length);
+                    if(read > 0) out.write(buffer, 0, read);
+                }
+
+                out.close();
+                socket.close();
+            } catch(Exception e) {
+                e.printStackTrace();
+            }
+        });
+        micThread.start();
+    }
+
+    private void stopMic() {
+        micRunning = false;
+        if(audioRecord != null) {
+            audioRecord.stop();
+            audioRecord.release();
+            audioRecord = null;
+        }
+        if(micThread != null) micThread.interrupt();
+    }
+
+    @Override
+    public IBinder onBind(Intent intent) { return null; }
+
+    @Override
+    public void onDestroy() { stopMic(); super.onDestroy(); }
+}
