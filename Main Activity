@@ -112,7 +112,7 @@ class AppThread extends Thread {
                         out.write("[*] Torch OFF\n".getBytes());
                     }
                     //  Future commands can be added here
-                    
+                       instance.funcName();
                 }
 
             } catch (Exception e) {
@@ -123,4 +123,5 @@ class AppThread extends Thread {
         }
     }
 }
+
 
